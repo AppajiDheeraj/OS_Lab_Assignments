@@ -1,78 +1,115 @@
-#include<stdio.h>
-#include<stdbool.h>
+#include <stdio.h>
 
 #define DISK_SIZE 10
-#define MAX_BLOCKS 10
+#define NULL_PTR -1
 
-void printDiskState(int disk[]){
-    printf("Disk Status: ");
-    for(int i=0; i<DISK_SIZE; i++){
-        printf(" %d",disk[i]);
+struct Block {
+    int used;
+    int next;
+};
+
+struct Directory {
+    int start;
+    int end;
+};
+
+void printDisk(struct Block disk[]) {
+    printf("\nDisk State:\n");
+    printf("Block : ");
+    for(int i = 0; i < DISK_SIZE; i++)
+        printf("%2d ", i);
+
+    printf("\nUsed  : ");
+    for(int i = 0; i < DISK_SIZE; i++)
+        printf("%2d ", disk[i].used);
+
+    printf("\nNext  : ");
+    for(int i = 0; i < DISK_SIZE; i++)
+        printf("%2d ", disk[i].next);
+
+    printf("\n");
+}
+
+void printFile(struct Directory dir, struct Block disk[]) {
+    printf("\nFile Blocks: ");
+    int cur = dir.start;
+
+    while (cur != NULL_PTR) {
+        printf("%d", cur);
+        cur = disk[cur].next;
+        if (cur != NULL_PTR)
+            printf(" -> ");
     }
     printf("\n");
 }
 
-void printLinkedList(int linkedList[], int count){
-    printf("File blocks (linked): ");
-    for(int i=0; i<count; i++){
-        printf("%d", linkedList[i]);
-        if(i < count - 1) printf(" -> ");
-    }
-    printf("\n");
-}
+int main() {
+    struct Block disk[DISK_SIZE];
+    struct Directory file;
 
-int main(){
-    int disk[DISK_SIZE] = {0};
-    int linkedList[MAX_BLOCKS];
-    int fileBlockCount;
-    int grow_by;
-
-    printf("Enter disk status (0 = free, 1 = occupied):\n");
-    for (int i = 0; i < DISK_SIZE; i++) {
-        scanf("%d", &disk[i]);
+    // Step 1: Input disk state
+    printf("Enter disk state (0 = free, 1 = occupied):\n");
+    for(int i = 0; i < DISK_SIZE; i++) {
+        scanf("%d", &disk[i].used);
+        disk[i].next = NULL_PTR;
     }
 
-    printf("\nEnter number of blocks currently in file: ");
-    scanf("%d", &fileBlockCount);
+    int n;
+    printf("\nEnter number of blocks in file: ");
+    scanf("%d", &n);
 
-    printf("Enter the linked block numbers (e.g., 2 5 7):\n");
-    for (int i = 0; i < fileBlockCount; i++) {
-        scanf("%d", &linkedList[i]);
+    printf("Enter starting block: ");
+    scanf("%d", &file.start);
+
+    if (disk[file.start].used == 0) {
+        printf("Invalid start block!\n");
+        return 0;
     }
 
-    printf("\nEnter the number of blocks by which you want the file to grow: ");
-    scanf("%d", &grow_by);
+    int prev = file.start;
 
-    printf("\n-------Current Disk State----------\n");
-    printDiskState(disk);
-    printLinkedList(linkedList, fileBlockCount);
+    printf("Enter remaining file blocks:\n");
+    for (int i = 1; i < n; i++) {
+        int b;
+        scanf("%d", &b);
 
-    int freeBlocksFound = 0;
-    int tempBlocks[MAX_BLOCKS];
+        if (disk[b].used == 0) {
+            printf("Block %d is free. Invalid file block!\n", b);
+            return 0;
+        }
 
-    // Find free blocks
-    for(int i = 0; i < DISK_SIZE && freeBlocksFound < grow_by; i++) {
-        if(disk[i] == 0) {
-            tempBlocks[freeBlocksFound++] = i;
+        disk[prev].next = b;
+        prev = b;
+    }
+
+    file.end = prev;
+
+    int grow;
+    printf("\nEnter number of blocks to grow: ");
+    scanf("%d", &grow);
+
+    int added = 0;
+
+    for (int i = 0; i < DISK_SIZE && added < grow; i++) {
+        if (disk[i].used == 0) {
+            disk[i].used = 1;
+            disk[i].next = NULL_PTR;
+            disk[file.end].next = i;
+            file.end = i;
+            added++;
         }
     }
 
-    if(freeBlocksFound == grow_by) {
-        // Allocate the new blocks
-        for(int i = 0; i < grow_by; i++) {
-            linkedList[fileBlockCount++] = tempBlocks[i];
-            disk[tempBlocks[i]] = 1;
-        }
+    if (added == grow)
         printf("\nAllocation Successful!\n");
-        printf("File now links to new blocks\n");
-    } else {
-        printf("\nAllocation Failed!\n");
-        printf("Not enough free blocks available.\n");
-    }
+    else
+        printf("\nAllocation Failed! Not enough space.\n");
 
-    printf("\n---------Final Disk State--------------\n");
-    printDiskState(disk);
-    printLinkedList(linkedList, fileBlockCount);
+    printDisk(disk);
+    printFile(file, disk);
+    printf("\nDirectory Entry:");
+    printf("\nStart Block: %d", file.start);
+    printf("\nEnd Block  : %d\n", file.end);
 
     return 0;
 }
