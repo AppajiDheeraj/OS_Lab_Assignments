@@ -29,6 +29,7 @@ void LOOK(int request[], int n, int head) {
     }
 
     printf("Total Head Movement using LOOK = %d\n", totalMovement);
+    printf("Average Seek Time = %.2f\n", (float)totalMovement / n);
 }
 
 int main() {

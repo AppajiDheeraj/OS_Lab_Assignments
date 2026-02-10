@@ -46,6 +46,7 @@ void C_LOOK(int request[], int n, int head) {
     }
 
     printf("Total Head Movement using C-LOOK = %d\n", totalMovement);
+    printf("Average Seek Time = %.2f\n", (float)totalMovement / n);
 }
 
 int main() {

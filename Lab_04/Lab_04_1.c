@@ -54,6 +54,7 @@ void C_SCAN(int request[], int n, int head) {
     }
 
     printf("Total Head Movement using C-SCAN = %d\n", totalMovement);
+    printf("Average Seek Time = %.2f\n", (float)totalMovement / n);
 }
 
 int main() {
