@@ -13,6 +13,7 @@ int main(){
     
     printf("Initial Memory addess: %p\n",sbrk(0));
     void *final_brk = initial_brk + n*sizeof(int);
+    //sbrk(n * sizeof(int));
     printf("Final Memory addess: %p\n",final_brk);
     printf("Memory Increased to %ld\n",final_brk - initial_brk);
     brk(final_brk);
