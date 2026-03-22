@@ -27,54 +27,82 @@ int main()
         p[i].rt=p[i].bt;
     }
 
-    int tq1=2,tq2=4,time=0;
+    int tq1=2,tq2=4,time=0,completed=0;
+    int q1[50],q2[50],q3[50],f1=0,r1=0,f2=0,r2=0,f3=0,r3=0;
+    int q1left[20]={0},q2left[20]={0};
+    int cur=-1,curQ=0;
 
-    // Queue1
-    for(int i=0;i<n;i++)
+    while(completed<n)
     {
-        if(p[i].rt>0)
+        for(int i=0;i<n;i++)
         {
-            if(p[i].rt>tq1)
+            if(p[i].at==time)
             {
-                time+=tq1;
-                p[i].rt-=tq1;
+                q1[r1++%50]=i;
+                q1left[i]=tq1;
+            }
+        }
+
+        if(cur!=-1)
+        {
+            if((curQ==2 && f1!=r1) || (curQ==3 && (f1!=r1 || f2!=r2)))
+            {
+                if(curQ==2)
+                    q2[r2++%50]=cur;
+                else
+                    q3[r3++%50]=cur;
+                cur=-1;
+            }
+        }
+
+        if(cur==-1)
+        {
+            if(f1!=r1)
+            {
+                cur=q1[f1++%50];
+                curQ=1;
+            }
+            else if(f2!=r2)
+            {
+                cur=q2[f2++%50];
+                curQ=2;
+            }
+            else if(f3!=r3)
+            {
+                cur=q3[f3++%50];
+                curQ=3;
             }
             else
             {
-                time+=p[i].rt;
-                p[i].rt=0;
-                p[i].ct=time;
+                time++;
+                continue;
             }
         }
-    }
 
-    // Queue2
-    for(int i=0;i<n;i++)
-    {
-        if(p[i].rt>0)
+        p[cur].rt--;
+        time++;
+
+        if(curQ==1)
+            q1left[cur]--;
+        else if(curQ==2)
+            q2left[cur]--;
+
+        if(p[cur].rt==0)
         {
-            if(p[i].rt>tq2)
-            {
-                time+=tq2;
-                p[i].rt-=tq2;
-            }
-            else
-            {
-                time+=p[i].rt;
-                p[i].rt=0;
-                p[i].ct=time;
-            }
+            p[cur].ct=time;
+            completed++;
+            cur=-1;
         }
-    }
-
-    // Queue3 FCFS
-    for(int i=0;i<n;i++)
-    {
-        if(p[i].rt>0)
+        else if(curQ==1 && q1left[cur]==0)
         {
-            time+=p[i].rt;
-            p[i].rt=0;
-            p[i].ct=time;
+            q2[r2++%50]=cur;
+            q2left[cur]=tq2;
+            cur=-1;
+        }
+        else if(curQ==2 && q2left[cur]==0)
+        {
+            q3[r3++%50]=cur;
+            cur=-1;
         }
     }
 
