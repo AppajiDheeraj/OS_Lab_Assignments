@@ -1,127 +1,135 @@
-#include <stdio.h>
+#include<stdio.h>
+#include<stdlib.h>
+#include<stdbool.h>
 
-struct process { int pid, at, bt, priority, queue, ct, tat, wt, rt; };
+void nonPremptive(int *at, int *bt, int *ct, int *wt, int *tat, int n, int *finished, int *p, int *q){
+    printf("NonPremptive\n");
+    int completed = 0;
+    int time = 0;
+    int best;
 
-static void display(struct process p[], int n)
-{
-    float avgwt = 0.0f, avgtat = 0.0f;
-    printf("\nPID AT BT Q PR CT TAT WT\n");
-    for(int i = 0; i < n; i++)
-    {
-        p[i].tat = p[i].ct - p[i].at;
-        p[i].wt = p[i].tat - p[i].bt;
-        avgwt += p[i].wt;
-        avgtat += p[i].tat;
-        printf("P%d %d %d %d %d %d %d %d\n",
-               p[i].pid, p[i].at, p[i].bt, p[i].queue,
-               p[i].priority, p[i].ct, p[i].tat, p[i].wt);
-    }
-    printf("\nAverage WT = %.2f", avgwt / n);
-    printf("\nAverage TAT = %.2f\n", avgtat / n);
-}
+    while(completed < n){
+        int idx = -1;
+        best = 99;
 
-static void multilevel_nonpreemptive(struct process p[], int n)
-{
-    int time = 0, completed = 0, done[100] = {0};
-    while(completed < n)
-    {
-        int idx = -1, min_priority = 9999;
-        for(int i = 0; i < n; i++)
-            if(!done[i] && p[i].queue == 1 && p[i].at <= time && p[i].priority < min_priority)
-                min_priority = p[i].priority, idx = i;
-
-        if(idx == -1)
-        {
-            int earliest_at = 9999;
-            for(int i = 0; i < n; i++)
-                if(!done[i] && p[i].queue == 2 && p[i].at <= time && p[i].at < earliest_at)
-                    earliest_at = p[i].at, idx = i;
-        }
-
-        if(idx != -1)
-        {
-            if(time < p[idx].at) time = p[idx].at;
-            time += p[idx].bt;
-            p[idx].ct = time;
-            done[idx] = 1;
-            completed++;
-        }
-        else time++;
-    }
-    printf("\n--- NON-PREEMPTIVE BETWEEN QUEUES ---\n");
-    display(p, n);
-}
-
-static void multilevel_preemptive(struct process p[], int n)
-{
-    int time = 0, completed = 0, current_q2 = -1;
-    for(int i = 0; i < n; i++) p[i].rt = p[i].bt;
-
-    while(completed < n)
-    {
-        int idx = -1, min_priority = 9999;
-        for(int i = 0; i < n; i++)
-            if(p[i].queue == 1 && p[i].at <= time && p[i].rt > 0 && p[i].priority < min_priority)
-                min_priority = p[i].priority, idx = i;
-
-        if(idx != -1)
-        {
-            if(time < p[idx].at) time = p[idx].at;
-            time += p[idx].rt;
-            p[idx].rt = 0;
-            p[idx].ct = time;
-            completed++;
-            continue;
-        }
-
-        if(current_q2 != -1 && p[current_q2].rt > 0 && p[current_q2].queue == 2 && p[current_q2].at <= time)
-            idx = current_q2;
-        else
-        {
-            int earliest_at = 9999;
-            for(int i = 0; i < n; i++)
-                if(p[i].queue == 2 && p[i].at <= time && p[i].rt > 0 && p[i].at < earliest_at)
-                    earliest_at = p[i].at, idx = i;
-        }
-
-        if(idx != -1)
-        {
-            p[idx].rt--;
-            time++;
-            current_q2 = idx;
-            if(p[idx].rt == 0)
-            {
-                p[idx].ct = time;
-                completed++;
-                current_q2 = -1;
+        for(int i = 0; i < n; i++){
+            if(at[i] <= time && p[i] < best && finished[i] == 0 && q[i] == 1){
+                best = p[i];
+                idx = i;
             }
         }
-        else time++;
+
+        if(idx == -1){
+            for(int i = 0; i < n; i++){
+                if(at[i] <= time && finished[i] == 0 && q[i] == 2){
+                    idx = i;
+                    break;
+                }
+            }
+        }
+
+        if(idx == -1){
+            time++; 
+        } else {
+            time += bt[idx];  
+            ct[idx] = time;  
+            finished[idx] = 1;  
+            completed++; 
+        }
     }
-    printf("\n--- PREEMPTIVE BETWEEN QUEUES ---\n");
-    display(p, n);
+
+    for(int i = 0; i < n; i++){
+        tat[i] = ct[i] - at[i];  
+        wt[i] = tat[i] - bt[i]; 
+    }
 }
 
-int main(void)
-{
-    int n; struct process p[100], p1[100], p2[100];
-    printf("Enter number of processes: ");
-    scanf("%d", &n);
-    if(n <= 0 || n > 100) { printf("Invalid number of processes. Must be 1 to 100.\n"); return 1; }
+void preemptive(int *at, int *bt, int *ct, int *wt, int *tat, int *rt, int n, int *finished, int *p, int *q) {
+    int completed = 0;
+    int time = 0;
+    int best;
 
-    for(int i = 0; i < n; i++)
-    {
-        p[i].pid = i + 1;
-        printf("\nProcess P%d\n", i + 1);
-        printf("Arrival Time: "); scanf("%d", &p[i].at);
-        printf("Burst Time: "); scanf("%d", &p[i].bt);
-        printf("Queue Number (1 or 2): "); scanf("%d", &p[i].queue);
-        if(p[i].queue == 1) { printf("Priority: "); scanf("%d", &p[i].priority); }
-        else p[i].priority = 9999;
+    while(completed < n) {
+        int idx = -1;
+        best = 99;
+
+        for (int i = 0; i < n; i++) {
+            if (at[i] <= time && p[i] < best && finished[i] == 0 && q[i] == 1) {
+                best = p[i];
+                idx = i;
+            }
+        }
+
+        if (idx == -1) {
+            for (int i = 0; i < n; i++) {
+                if (at[i] <= time && finished[i] == 0 && q[i] == 2) {
+                    idx = i;
+                    break;
+                }
+            }
+        }
+
+        if (idx == -1) {
+            time++;
+        } else {
+            time++;   
+            rt[idx]--; 
+
+
+            if (rt[idx] == 0) {
+                ct[idx] = time; 
+                finished[idx] = 1;  
+                completed++; 
+            }
+        }
     }
 
-    for(int i = 0; i < n; i++) { p1[i] = p[i]; p2[i] = p[i]; }
-    multilevel_nonpreemptive(p1, n);
-    multilevel_preemptive(p2, n);
+    for (int i = 0; i < n; i++) {
+        tat[i] = ct[i] - at[i];  
+        wt[i] = tat[i] - bt[i];  
+    }
+}
+int main(){
+
+    int n;
+    printf("Enter the no of processes: ");
+    scanf("%d",&n);
+
+    int at[n], bt[n], ct[n], wt[n], tat[n], rt[n],p[n], q[n], finished[n];
+    for(int i = 0 ; i < n; i++){
+        printf("Enter the AT, BT, Priority and Queue no for process %d : ",i);
+        scanf("%d %d %d %d",&at[i],&bt[i],&p[i],&q[i]);
+        rt[i] = bt[i];
+        finished[i] = 0;
+
+    }
+
+   
+    int select;
+    printf(" For Non-Premptive enter 1 and for Premptive enter 2 : ");
+    scanf("%d",&select);               
+
+
+    if(select == 1){
+        nonPremptive(at,bt,ct,wt,tat,n, finished,p,q);
+
+    }else{
+        preemptive(at,bt,ct,wt,tat,rt,n,finished,p,q);
+    }
+   
+
+    float avgtat = 0;
+    float avgwt = 0;
+
+    printf("| AT | CT | BT | WT | TAT |\n");
+    for(int i = 0; i < n; i++){
+        printf("|  %d   |  %d   |  %d   |  %d   |   %d   |\n",at[i],ct[i],bt[i],wt[i],tat[i]);
+        avgtat += tat[i];
+        avgwt += wt[i];
+    }
+
+    printf("Average TAT: %f\n",avgtat/n);
+    printf("Average WT: %f\n",avgwt/n);
+
     return 0;
 }

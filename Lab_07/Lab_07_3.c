@@ -1,130 +1,114 @@
 #include<stdio.h>
+#include<stdlib.h>
 
-struct process{
-    int pid,at,bt,rt,ct,tat,wt;
-};
+void preemptive(int *at, int *bt, int *ct, int *wt, int *tat,int *rt, int n, int *finished,  int *q){
+ int completed = 0;
+    int time = 0; 
+    // int best = 9999;
+    while(completed < n){
+        int idx = -1;
+        for(int i = 0; i <n; i++){
+            if(at[i] <= time  && finished[i] == 0 && q[i] == 1){
+                idx = i;
+                break;
+            }
+        }
+        if(idx == -1){
+            for(int i = 0; i <n; i++){
+            if(at[i] <= time &&finished[i] == 0 && q[i] == 2){
+                idx = i;
+                break;
+            }
+        }
+        }
+        if(idx == -1){
+            for(int i = 0; i <n; i++){
+            if(at[i] <= time &&finished[i] == 0 && q[i] == 3){
+                idx = i;
+                break;
+            }
+        }
+        }
+        if(idx == -1){
+            time++;
+        }else{
+            
+            if(q[idx] == 1){
+                if(rt[idx] <= 2){
+                    time += rt[idx];
+                    rt[idx] = 0;
+                    finished[idx] = 1;
+                    ct[idx] = time;
+                    completed++;
+                }else{
+                    time += 2;
+                    rt[idx] -= 2;
+                    q[idx] = 2;
+                }
 
-int main()
-{
+            }
+             
+            else if(q[idx] == 2){
+                if(rt[idx] <= 4){
+                    time += rt[idx];
+                    rt[idx] = 0;
+                    finished[idx] = 1;
+                    ct[idx] = time;
+                    completed++;
+                }else{
+                    time += 4;
+                    rt[idx] -= 4;
+                    q[idx] = 3;
+                }
+
+            }
+
+            else{
+                time += rt[idx];
+                rt[idx] = 0;
+                ct[idx] = time;
+                finished[idx] = 1;
+                completed++;
+            }
+        
+        }
+    }
+
+    for(int i = 0; i < n; i++){
+        tat[i] = ct[i] - at[i];
+        wt[i] = tat[i] - bt[i];
+    }
+}
+
+
+int main(){
+
     int n;
-    printf("Enter number of processes: ");
+    printf("Enter the no of processes: ");
     scanf("%d",&n);
 
-    struct process p[20];
+    int at[n], bt[n], ct[n], wt[n], tat[n], rt[n], q[n], finished[n];
+    for(int i = 0 ; i < n; i++){
+        printf("Enter the AT, BT and Queue no for process %d : ",i);
+        scanf("%d %d %d",&at[i],&bt[i],&q[i]);
+        rt[i] = bt[i];
+        finished[i] = 0;
+    }
+   
+    preemptive(at,bt,ct,wt,tat,rt,n,finished,q);
 
-    for(int i=0;i<n;i++)
-    {
-        p[i].pid=i+1;
+    float avgtat = 0;
+    float avgwt = 0;
 
-        printf("\nProcess P%d\n",i+1);
-
-        printf("Arrival Time: ");
-        scanf("%d",&p[i].at);
-
-        printf("Burst Time: ");
-        scanf("%d",&p[i].bt);
-
-        p[i].rt=p[i].bt;
+    printf("\n| AT | CT | BT | WT | TAT |\n");
+    for(int i = 0; i < n; i++){
+        printf("|  %d  |  %d  |  %d  |  %d  |  %d  |\n",at[i],ct[i],bt[i],wt[i],tat[i]);
+        avgtat += tat[i];
+        avgwt += wt[i];
     }
 
-    int tq1=2,tq2=4,time=0,completed=0;
-    int q1[50],q2[50],q3[50],f1=0,r1=0,f2=0,r2=0,f3=0,r3=0;
-    int q1left[20]={0},q2left[20]={0};
-    int cur=-1,curQ=0;
-
-    while(completed<n)
-    {
-        for(int i=0;i<n;i++)
-        {
-            if(p[i].at==time)
-            {
-                q1[r1++%50]=i;
-                q1left[i]=tq1;
-            }
-        }
-
-        if(cur!=-1)
-        {
-            if((curQ==2 && f1!=r1) || (curQ==3 && (f1!=r1 || f2!=r2)))
-            {
-                if(curQ==2)
-                    q2[r2++%50]=cur;
-                else
-                    q3[r3++%50]=cur;
-                cur=-1;
-            }
-        }
-
-        if(cur==-1)
-        {
-            if(f1!=r1)
-            {
-                cur=q1[f1++%50];
-                curQ=1;
-            }
-            else if(f2!=r2)
-            {
-                cur=q2[f2++%50];
-                curQ=2;
-            }
-            else if(f3!=r3)
-            {
-                cur=q3[f3++%50];
-                curQ=3;
-            }
-            else
-            {
-                time++;
-                continue;
-            }
-        }
-
-        p[cur].rt--;
-        time++;
-
-        if(curQ==1)
-            q1left[cur]--;
-        else if(curQ==2)
-            q2left[cur]--;
-
-        if(p[cur].rt==0)
-        {
-            p[cur].ct=time;
-            completed++;
-            cur=-1;
-        }
-        else if(curQ==1 && q1left[cur]==0)
-        {
-            q2[r2++%50]=cur;
-            q2left[cur]=tq2;
-            cur=-1;
-        }
-        else if(curQ==2 && q2left[cur]==0)
-        {
-            q3[r3++%50]=cur;
-            cur=-1;
-        }
-    }
-
-    float avgwt=0,avgtat=0;
-
-    printf("\nPID AT BT CT TAT WT\n");
-
-    for(int i=0;i<n;i++)
-    {
-        p[i].tat=p[i].ct-p[i].at;
-        p[i].wt=p[i].tat-p[i].bt;
-
-        avgwt+=p[i].wt;
-        avgtat+=p[i].tat;
-
-        printf("P%d %d %d %d %d %d\n",
-        p[i].pid,p[i].at,p[i].bt,
-        p[i].ct,p[i].tat,p[i].wt);
-    }
-
-    printf("\nAverage WT=%.2f",avgwt/n);
-    printf("\nAverage TAT=%.2f\n",avgtat/n);
+    printf("Average TAT: %f\n",avgtat/n);
+    printf("Average WT: %f\n",avgwt/n);
 
     return 0;
 }
