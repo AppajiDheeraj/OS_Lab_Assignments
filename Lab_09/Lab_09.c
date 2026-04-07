@@ -1,0 +1,115 @@
+#include <stdio.h>
+
+#define MAX 20
+
+void bestFit(int blocks[], int n, int processes[], int m) {
+    int tempBlocks[MAX], allocation[MAX], originalSize[MAX], frag[MAX];
+    for (int i = 0; i < n; i++) tempBlocks[i] = blocks[i];
+    for (int i = 0; i < m; i++) allocation[i] = -1;
+
+    printf("\n--- Best-Fit Allocation ---\n");
+    for (int i = 0; i < m; i++) {
+        int bestIdx = -1;
+        for (int j = 0; j < n; j++) {
+            if (tempBlocks[j] >= processes[i]) {
+                if (bestIdx == -1 || tempBlocks[j] < tempBlocks[bestIdx])
+                    bestIdx = j;
+            }
+        }
+
+        if (bestIdx != -1) {
+            allocation[i] = bestIdx;
+            originalSize[i] = tempBlocks[bestIdx]; 
+            frag[i] = tempBlocks[bestIdx] - processes[i];
+            tempBlocks[bestIdx] -= processes[i]; 
+        }
+    }
+
+    int totalInternal = 0;
+    printf("P_No\tP_Size\tBlock_No\tBlock_Size\tFragment\n");
+    for (int i = 0; i < m; i++) {
+        printf("%d\t%d\t", i + 1, processes[i]);
+        if (allocation[i] != -1) {
+            printf("%d\t\t%d\t\t%d\n", allocation[i] + 1, originalSize[i], frag[i]);
+            totalInternal += frag[i];
+        } else printf("Not Allocated\n");
+    }
+
+    int totalExternal = 0;
+    for (int i = 0; i < n; i++) totalExternal += tempBlocks[i];
+    printf("Total Internal Fragmentation: %d KB\n", totalInternal);
+    printf("Total External Fragmentation: %d KB\n", totalExternal);
+}
+
+void nextFit(int blocks[], int n, int processes[], int m) {
+    int tempBlocks[MAX], allocation[MAX], originalSize[MAX], frag[MAX];
+    for (int i = 0; i < n; i++) tempBlocks[i] = blocks[i];
+    for (int i = 0; i < m; i++) allocation[i] = -1;
+
+    int lastIdx = 0;
+    printf("\n--- Next-Fit Allocation ---\n");
+    for (int i = 0; i < m; i++) {
+        int count = 0;
+        while (count < n) {
+            if (tempBlocks[lastIdx] >= processes[i]) {
+                allocation[i] = lastIdx;
+                originalSize[i] = tempBlocks[lastIdx];
+                frag[i] = tempBlocks[lastIdx] - processes[i];
+                tempBlocks[lastIdx] -= processes[i]; 
+                
+                // Advance pointer past the current block for the next search
+                lastIdx = (lastIdx + 1) % n; 
+                break;
+            }
+            lastIdx = (lastIdx + 1) % n;
+            count++;
+        }
+    }
+
+    int totalInternal = 0;
+    printf("P_No\tP_Size\tBlock_No\tBlock_Size\tFragment\n");
+    for (int i = 0; i < m; i++) {
+        printf("%d\t%d\t", i + 1, processes[i]);
+        if (allocation[i] != -1) {
+            printf("%d\t\t%d\t\t%d\n", allocation[i] + 1, originalSize[i], frag[i]);
+            totalInternal += frag[i];
+        } else printf("Not Allocated\n");
+    }
+
+    int totalExternal = 0;
+    for (int i = 0; i < n; i++) totalExternal += tempBlocks[i];
+    printf("Total Internal Fragmentation: %d KB\n", totalInternal);
+    printf("Total External Fragmentation: %d KB\n", totalExternal);
+}
+
+int main() {
+    int n, m, totalMem, sumBlocks = 0;
+    int blocks[MAX], processes[MAX];
+
+    printf("Enter total memory size: ");
+    scanf("%d", &totalMem);
+    printf("Enter number of memory blocks: ");
+    scanf("%d", &n);
+    for (int i = 0; i < n; i++) {
+        printf("Size of block %d: ", i + 1);
+        scanf("%d", &blocks[i]);
+        sumBlocks += blocks[i];
+    }
+
+    if (sumBlocks > totalMem) {
+        printf("Error: Blocks exceed total memory!\n");
+        return 0;
+    }
+
+    printf("Enter number of processes: ");
+    scanf("%d", &m);
+    for (int i = 0; i < m; i++) {
+        printf("Requirement of process %d: ", i + 1);
+        scanf("%d", &processes[i]);
+    }
+
+    bestFit(blocks, n, processes, m);
+    nextFit(blocks, n, processes, m);
+
+    return 0;
+}
